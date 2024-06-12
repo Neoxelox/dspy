@@ -10,7 +10,7 @@ from pydantic.fields import FieldInfo
 
 import dspy
 from dsp.templates import passages2text
-from dspy.primitives.prediction import Completions, Prediction
+from dspy.primitives.prediction import Completions, Prediction, Usage
 from dspy.signatures.signature import ensure_signature, make_signature
 
 
@@ -291,6 +291,8 @@ class TypedPredictor(dspy.Module):
         # We have to re-prepare the signature on every forward call, because the base
         # signature might have been modified by an optimizer or something like that.
         signature = self._prepare_signature()
+        usage = Usage(prompt_tokens=0, completion_tokens=0, total_tokens=0)
+        # TODO: Compute real usage!
         for try_i in range(self.max_retries):
             result = self.predictor(**modified_kwargs, new_signature=signature)
             errors = {}
@@ -378,6 +380,7 @@ class TypedPredictor(dspy.Module):
                     signature=signature,
                     examples=examples,
                     input_kwargs={},
+                    usage=result.completions.usage,
                 )
 
                 pred = Prediction.from_completions(completions)

@@ -4,7 +4,7 @@ import typing as t
 from json import JSONDecodeError
 
 from dspy.primitives.example import Example
-from dspy.primitives.prediction import Completions
+from dspy.primitives.prediction import Completions, Usage
 from dspy.signatures.signature import Signature
 
 from .text import DEFAULT_PARAMS, TextBackend
@@ -108,4 +108,14 @@ class JSONBackend(TextBackend):
         messages = [c["message"] for c in response.choices if c["finish_reason"] != "length"]
 
         extracted = [self._extract(signature, example, message["content"]) for message in messages]
-        return Completions(signature=signature, examples=extracted, input_kwargs=input_kwargs)
+
+        return Completions(
+            signature=signature,
+            examples=extracted,
+            input_kwargs=input_kwargs,
+            usage=Usage(
+                prompt_tokens=response.usage.prompt_tokens,
+                completion_tokens=response.usage.completion_tokens,
+                total_tokens=response.usage.total_tokens,
+            ),
+        )

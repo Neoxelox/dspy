@@ -3,7 +3,7 @@ import typing as t
 
 from pydantic import Field
 
-from dspy.primitives import Completions, Example
+from dspy.primitives import Completions, Example, Usage
 from dspy.signatures.signature import Signature, SignatureMeta
 
 from .text import DEFAULT_FORMAT_HANDLERS, DEFAULT_PARAMS, TextBackend, default_format_handler
@@ -97,7 +97,7 @@ class ChatBackend(TextBackend):
                     prompt_text += messages[idx + 1]["content"] + "\n\n---\n\n"
 
         # Extract examples
-        extracted = [
+        examples = [
             self._extract(signature, example, prompt_text + message["content"]) for message in generated_messages
         ]
 
@@ -106,6 +106,11 @@ class ChatBackend(TextBackend):
 
         return Completions(
             signature=signature,
-            examples=extracted,
+            examples=examples,
             input_kwargs=input_kwargs,
+            usage=Usage(
+                prompt_tokens=response.usage.prompt_tokens,
+                completion_tokens=response.usage.completion_tokens,
+                total_tokens=response.usage.total_tokens,
+            ),
         )

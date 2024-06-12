@@ -5,7 +5,7 @@ import regex
 from pydantic import Field
 
 from dspy.modeling.backends.base import BaseBackend
-from dspy.primitives import Completions, Example
+from dspy.primitives import Completions, Example, Usage
 from dspy.signatures.signature import Signature, SignatureMeta
 
 logger = logging.getLogger(__name__)
@@ -229,4 +229,9 @@ class TextBackend(BaseBackend):
             signature=signature,
             examples=extracted,
             input_kwargs=input_kwargs,
+            usage=Usage(
+                prompt_tokens=response.usage.prompt_tokens,
+                completion_tokens=response.usage.completion_tokens,
+                total_tokens=response.usage.total_tokens,
+            ),
         )

@@ -9,6 +9,19 @@ from dspy.signatures.signature import Signature, SignatureMeta
 default_normalize = lambda s: normalize_text(s) or None
 
 
+class Usage(BaseModel):
+    prompt_tokens: int
+    completion_tokens: int
+    total_tokens: int
+
+    def __add__(self, other: "Usage") -> "Usage":
+        return Usage(
+            prompt_tokens=self.prompt_tokens + other.prompt_tokens,
+            completion_tokens=self.completion_tokens + other.completion_tokens,
+            total_tokens=self.total_tokens + other.total_tokens,
+        )
+
+
 class Completions(BaseModel):
     # For some reason Signature is leading to an error here
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -17,8 +30,10 @@ class Completions(BaseModel):
     examples: list[Example]
     input_kwargs: dict[str, t.Any]
     data: dict[str, list[t.Any]]
+    usage: Usage
 
-    def __init__(self, signature: Signature, examples: list[Example], input_kwargs: dict, **kwargs):
+    def __init__(self, signature: Signature, examples: list[Example],
+                  input_kwargs: dict, usage: t.Optional[Usage] = None, **kwargs):
         data = {}
         for example in examples:
             for k, v in example.items():
@@ -27,7 +42,10 @@ class Completions(BaseModel):
                 else:
                     data[k] = [v]
 
-        super().__init__(signature=signature, examples=examples, input_kwargs=input_kwargs, data=data, **kwargs)
+        usage = usage or Usage(prompt_tokens=0, completion_tokens=0, total_tokens=0)
+
+        super().__init__(signature=signature, examples=examples, input_kwargs=input_kwargs,
+                          data=data, usage=usage, **kwargs)
 
     def has_complete_example(self) -> bool:
         for example in self.examples:

@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 
 import dspy
 from dspy.primitives.example import Example
-from dspy.primitives.prediction import Completions
+from dspy.primitives.prediction import Completions, Usage
 from dspy.signatures.signature import Signature, ensure_signature
 
 _cachedir = os.environ.get("DSP_CACHEDIR") or str(Path.home() / ".joblib_cache")
@@ -79,6 +79,7 @@ class BaseBackend(BaseModel, ABC):
 
         i = 0
         completions = None
+        usage = Usage(prompt_tokens=0, completion_tokens=0, total_tokens=0)
 
         while i < attempts:
             # Returns a List of Completions
@@ -104,6 +105,9 @@ class BaseBackend(BaseModel, ABC):
             if "max_tokens" in kwargs:
                 config["max_tokens"] = max(1, int(config["max_tokens"] / 2))
 
+            # Compute total usage
+            usage += completions.usage
+
             i += 1
 
         completions.remove_incomplete()
@@ -112,6 +116,7 @@ class BaseBackend(BaseModel, ABC):
                 "Generation failed, recursively attempts to complete did not succeed.",
             )
 
+        completions.usage = usage
         self.history.append(completions)
 
         return completions
